@@ -37,7 +37,7 @@ defmodule NervesSystemRpi0.MixProject do
       artifact_sites: [
         {:github_releases, "nerves-project/#{@app}"}
       ],
-      build_runner_opts: build_runner_opts(),
+      # build_runner_opts: build_runner_opts(),
       platform: Nerves.System.BR,
       platform_config: [
         defconfig: "nerves_defconfig"
@@ -96,12 +96,14 @@ defmodule NervesSystemRpi0.MixProject do
     File.cp_r("assets", "doc/assets")
   end
 
-  defp build_runner_opts() do
-    if System.get_env("CI") do
-      primary_site = System.get_env("BR2_PRIMARY_SITE") || "~/.nerves/dl"
-      [make_args: "BR2_PRIMARY_SITE=#{primary_site}"]
-    else
-      []
-    end
-  end
+  # defp build_runner_opts() do
+  #   if System.get_env("CI") do
+  #     primary_site = System.get_env("BR2_PRIMARY_SITE") || "~/.nerves/dl"
+  #     primary_site = Path.expand(primary_site)
+  #     System.put_env("BR2_PRIMARY_SITE_ONLY", "file://#{primary_site}")
+  #     [make_args: "BR2_PRIMARY_SITE_ONLY=file://#{primary_site}"]
+  #   else
+  #     []
+  #   end
+  # end
 end
