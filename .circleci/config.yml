@@ -35,6 +35,13 @@ install_aws_cli: &install_aws_cli
       apt update -qq
       apt install awscli -qq -y
 
+install_jq: &install_jq
+  run:
+    name: Install jq
+    command : |
+      apt update -qq
+      apt install jq -qq -y
+
 install_ghr: &install_ghr
   run:
     name: Install ghr (Github Releases)
@@ -50,9 +57,18 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - <<: *install_jq
       - <<: *install_elixir
       - <<: *install_hex_rebar
       - <<: *install_nerves_bootstrap
+      - run:
+          name: "Restore Buildroot download cache"
+          command: |
+            .circleci/scripts/artifact-download.sh system/cache/nerves_dl.tar.gz ~/.nerves/prev/nerves_dl.tar.gz
+            if [ -e ~/.nerves/prev/nerves_dl.tar.gz ]; then
+              tar -xzf ~/.nerves/prev/nerves_dl.tar.gz -C ~/.nerves/prev
+            fi
+            echo 'export BR2_PRIMARY_SITE=$HOME/.nerves/prev/dl' >> $BASH_ENV
       - run:
           name: Install dependencies
           command: mix deps.get
@@ -75,9 +91,8 @@ jobs:
       - run:
           name: Copy CHANGELOG
           command: cp ./CHANGELOG.md /nerves/deploy/system/CHANGELOG.md
-
       - run:
-          name: Create artifacts
+          name: Create system artifacts
           command: |
             if [ -n "$CIRCLE_TAG" ]; then
               TAG=$CIRCLE_TAG
@@ -85,6 +100,8 @@ jobs:
               TAG=$CIRCLE_SHA1
             fi
             mix nerves.artifact ${CIRCLE_PROJECT_REPONAME} --path /nerves/deploy/system/artifacts
+            mkdir -p /nerves/deploy/system/artifacts/cache
+            tar -zcvf /nerves/deploy/system/artifacts/cache/nerves_dl.tar.gz -C ~/.nerves dl
       - store_artifacts:
           path: /nerves/deploy/system/artifacts
           destination: system
@@ -104,6 +121,7 @@ jobs:
           command: |
             mkdir -p ~/.nerves/dl
             cp /nerves/deploy/system/artifacts/*.gz ~/.nerves/dl
+      - <<: *install_jq
       - <<: *install_elixir
       - <<: *install_hex_rebar
       - <<: *install_nerves_bootstrap
